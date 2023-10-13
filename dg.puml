@@ -1,0 +1,40 @@
+@startuml User Login 
+!pragma teoz true
+!theme cerulean-outline
+title "Diagrama de Secuencia - Proceso de Autenticación"
+
+actor User
+actor MatraseApp
+actor MatraseAPI
+database "DB Matrase" as DB
+actor Silogtrans as SLT
+
+User -> MatraseApp: Fill Email
+activate MatraseApp
+deactivate MatraseApp
+User -> MatraseApp: Fill Password
+activate MatraseApp
+deactivate MatraseApp
+MatraseApp -> MatraseAPI
+activate MatraseAPI
+MatraseAPI -> SLT: Send Request to Silogtrans
+deactivate MatraseAPI
+activate SLT
+SLT -> MatraseAPI: Response User login Failed or Successfully
+deactivate SLT
+activate MatraseAPI
+alt Silogtran Response Success
+    MatraseAPI -> MatraseAPI: Verify User in Database
+    alt If user not exists into database
+        MatraseAPI -> DB: Save user data with pasword
+        activate DB
+    end
+    deactivate DB
+    MatraseAPI -> MatraseAPI: Generate Internal Token
+    MatraseAPI -[#LightGreen]> User: Respond Internal and External Token
+else
+   MatraseAPI -[#red]> User: Authentication Error 
+   deactivate MatraseAPI
+end
+
+@enduml

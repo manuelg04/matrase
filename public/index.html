@@ -1,0 +1,91 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+        const socket = io('http://localhost:4000');
+
+        socket.on('get_message', (payload) => {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `<p>${payload.message}</p>`;
+        });
+
+        function sendMessageWithFile() {
+            const message = document.getElementById('message').value;
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Por favor, selecciona un archivo primero.');
+                return;
+            }
+
+            // Leer el archivo y convertirlo en base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function () {
+                const base64Image = reader.result;
+
+                // Envía el mensaje y la imagen usando WebSockets
+                console.log("Emitiendo mensaje...", message, base64Image);
+                socket.emit('send_message', {
+                    id: 2,
+                    sender_id: 1,
+                    message: message,
+                    image: base64Image,
+                    sender_type: 'conductor',
+                    send_at: new Date().toISOString(),
+                    status: 'pending',
+                });
+            };
+            reader.onerror = function (error) {
+                console.error('Error al convertir el archivo:', error);
+            };
+        }
+
+
+        function getChatDetails() {
+            const chatId = document.getElementById('id').value;
+            console.log("🚀 ~ chatId:")
+
+            if (!chatId) {
+                alert('Por favor, introduce el ID del chat primero.');
+                return;
+            }
+            fetch(`http://localhost:4000/getChatDetails/${chatId}`)
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error('La respuesta de la red no fue ok');
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    const chatElement = document.getElementById('chatDetails');
+                    chatElement.textContent = JSON.stringify(data, null, 2);
+                })
+                .catch((error) => {
+                    console.log('Hubo un problema con la operación fetch:', error.message);
+                });
+        }
+    </script>
+</head>
+
+<body>
+    <div id="messages"></div>
+    <input type="text" id="message" />
+    <input type="file" id="file" />
+
+    <button onclick="sendMessageWithFile()">Enviar mensaje con archivo</button>
+    <pre id="chatDetails"></pre>
+    <button onclick="getChatDetails()">Mostrar detalles del chat</button>
+    <label for="chatId">ID del Chat:</label>
+    <input type="text" id="id" />
+
+</body>
+
+</html>
